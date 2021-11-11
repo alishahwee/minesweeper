@@ -159,6 +159,7 @@ class MinesweeperAI:
         Marks a cell as a mine, and updates all knowledge
         to mark that cell as a mine as well.
         """
+        print(f"Marking {cell} as mine")
         self.mines.add(cell)
         for sentence in self.knowledge:
             sentence.mark_mine(cell)
@@ -168,6 +169,7 @@ class MinesweeperAI:
         Marks a cell as safe, and updates all knowledge
         to mark that cell as safe as well.
         """
+        print(f"Marking {cell} as safe")
         self.safes.add(cell)
         for sentence in self.knowledge:
             sentence.mark_safe(cell)
@@ -201,30 +203,40 @@ class MinesweeperAI:
                 and 0 <= neighbor[0] < self.height
                 and 0 <= neighbor[1] < self.width
             ):  #  Don't include the cell and coordinates outside the board
-                if neighbor not in self.mines and neighbor not in self.safes:
+                if neighbor not in self.moves_made:
                     cells.add(neighbor)
 
-        self.knowledge.append(Sentence(cells, count))
+        if len(cells) > 0:
+            sentence = Sentence(cells, count)
+            if sentence not in self.knowledge:
+                print(f"Adding sentence {sentence}")
+                self.knowledge.append(sentence)
 
         # 4
         for sentence in self.knowledge:
+            print(f"Evaluating sentence {sentence}...")
             if sentence.known_mines() is not None:
                 for cell in sentence.known_mines().copy():
                     self.mark_mine(cell)
             if sentence.known_safes() is not None:
                 for cell in sentence.known_safes().copy():
                     self.mark_safe(cell)
+            if len(sentence.cells) == 0:
+                print(f"Deleting {sentence}")
+                self.knowledge.remove(sentence)
 
         # 5
         for sentence_one in self.knowledge:
-            for sentence_two in self.knowledge:
-                if sentence_one is not sentence_two and sentence_one.cells.issubset(
-                    sentence_two.cells
-                ):
-                    sentence_two = Sentence(
-                        sentence_two.cells - sentence_one.cells,
-                        sentence_two.count - sentence_one.count,
+            for i in range(len(self.knowledge)):
+                if sentence_one is not self.knowledge[
+                    i
+                ] and sentence_one.cells.issubset(self.knowledge[i].cells):
+                    new_sentence = Sentence(
+                        self.knowledge[i].cells - sentence_one.cells,
+                        self.knowledge[i].count - sentence_one.count,
                     )
+                    print(f"{self.knowledge[i]} - {sentence_one} = {new_sentence}")
+                    self.knowledge[i] = new_sentence
 
     def make_safe_move(self):
         """
@@ -243,7 +255,9 @@ class MinesweeperAI:
                     safe_cells.add((i, j))
 
         if len(safe_cells) > 0:
-            return random.sample(safe_cells, 1)[0]
+            move = random.sample(safe_cells, 1)[0]
+            print(f"Making safe move at {move}")
+            return move
 
     def make_random_move(self):
         """
@@ -260,4 +274,6 @@ class MinesweeperAI:
                     random_cells.add((i, j))
 
         if len(random_cells) > 0:
-            return random.sample(random_cells, 1)[0]
+            move = random.sample(random_cells, 1)[0]
+            print(f"Making random move at {move}")
+            return move
